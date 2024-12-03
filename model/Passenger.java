@@ -1,4 +1,4 @@
-package model;
+package com.samilemir.model;
 
 import java.time.LocalDate;
 

@@ -1,4 +1,4 @@
-package model;
+package com.samilemir.model;
 
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.GeneratedValue;
