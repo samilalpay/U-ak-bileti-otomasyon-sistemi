@@ -1,10 +1,9 @@
 package com.samilemir.repos;
 
+import com.samilemir.model.Airport;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.samilemir.model.Airline;
-
 @Repository
-public interface AirlineRepos extends JpaRepository<Airline, Long> {
+public interface AirportRepos extends JpaRepository<Airport, Long> {
 }
