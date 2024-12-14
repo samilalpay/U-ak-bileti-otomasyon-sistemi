@@ -1,12 +1,15 @@
 package com.samilemir.controller;
 
+import com.samilemir.dto.DtoPassenger;
+import com.samilemir.dto.DtoPassengerIU;
 import com.samilemir.model.Passenger;
 import com.samilemir.service.IPassengerService;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/passengers")
@@ -16,31 +19,47 @@ public class PassengerController {
     private IPassengerService passengerService;
 
     @GetMapping
-    public List<Passenger> getAllPassengers() {
-        return passengerService.getAllPassengers();
+    public List<DtoPassenger> getAllPassengers() {
+        return passengerService.getAllPassengers().stream()
+                .map(this::convertToDtoPassenger)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public Passenger getPassengerById(@PathVariable Long id) {
-        return passengerService.getPassengerById(id);
+    public DtoPassenger getPassengerById(@PathVariable Long id) {
+        Passenger passenger = passengerService.getPassengerById(id);
+        return convertToDtoPassenger(passenger);
     }
 
     @PostMapping
-    public Passenger createPassenger(@RequestBody Passenger passenger, @RequestHeader("Authorization") String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new AccessDeniedException("Authorization token is missing or invalid");
-        }
+    public DtoPassenger createPassenger(@RequestBody DtoPassengerIU passengerDto) {
+        Passenger passenger = convertToEntity(passengerDto);
         Passenger createdPassenger = passengerService.createPassenger(passenger);
-        return createdPassenger;
+        return convertToDtoPassenger(createdPassenger);
     }
 
     @PutMapping("/{id}")
-    public Passenger updatePassenger(@PathVariable Long id, @RequestBody Passenger passenger) {
-        return passengerService.updatePassenger(id, passenger);
+    public DtoPassenger updatePassenger(@PathVariable Long id, @RequestBody DtoPassengerIU passengerDto) {
+        Passenger passenger = convertToEntity(passengerDto);
+        Passenger updatedPassenger = passengerService.updatePassenger(id, passenger);
+        return convertToDtoPassenger(updatedPassenger);
     }
 
     @DeleteMapping("/{id}")
     public void deletePassenger(@PathVariable Long id) {
         passengerService.deletePassenger(id);
+    }
+
+    private DtoPassenger convertToDtoPassenger(Passenger passenger) {
+        return new DtoPassenger(passenger.getFirstName(), passenger.getLastName());
+    }
+
+    private Passenger convertToEntity(DtoPassengerIU passengerDto) {
+        Passenger passenger = new Passenger();
+        passenger.setFirstName(passengerDto.getFirstName());
+        passenger.setLastName(passengerDto.getLastName());
+        passenger.setBirthOfDate(passengerDto.getBirthOfDate());
+        passenger.setEMail(passengerDto.getEMail());
+        return passenger;
     }
 }
