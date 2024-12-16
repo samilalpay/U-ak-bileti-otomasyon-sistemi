@@ -55,6 +55,7 @@ public class FlightController {
 
     private DtoFlight convertToDtoFlight(Flight flight) {
         return new DtoFlight(
+        		flight.getId(),
                 flight.getDepartureTime(),
                 flight.getArrivalTime(),
                 flight.getDepartureAirport().getAirportName(),
