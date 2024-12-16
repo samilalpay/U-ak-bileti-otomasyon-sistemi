@@ -3,57 +3,73 @@ package com.samilemir.service.impl;
 import com.samilemir.exception.BaseException;
 import com.samilemir.exception.ErrorMessage;
 import com.samilemir.exception.MessageType;
+import com.samilemir.model.Seat;
 import com.samilemir.model.Ticket;
+import com.samilemir.repos.SeatRepos;
 import com.samilemir.repos.TicketRepos;
 import com.samilemir.service.ITicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class TicketServiceImpl implements ITicketService {
 
     @Autowired
-    private TicketRepos ticketRepos;
+    private TicketRepos ticketRepository;
+
+    @Autowired
+    private SeatRepos seatRepository; // Koltukları kontrol etmek için eklendi
 
     @Override
     public List<Ticket> getAllTickets() {
-        return ticketRepos.findAll();
+        return ticketRepository.findAll();
     }
 
     @Override
     public Ticket getTicketById(Long id) {
-        return ticketRepos.findById(id)
+        return ticketRepository.findById(id)
                 .orElseThrow(() -> new BaseException(new ErrorMessage("Ticket not found with ID: " + id, MessageType.BILET_BULUNAMADI)));
     }
 
     @Override
     public Ticket createTicket(Ticket ticket) {
-        return ticketRepos.save(ticket);
+        ticket.setAmount(1000.00); // Varsayılan tutar
+        ticket.setCurrencyType("USD"); // Varsayılan döviz tipi
+        ticket.setTicketStatus("CONFIRMED"); // Varsayılan durum
+
+        // Rastgele PNR oluşturmak için
+        ticket.setPnrCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+
+        List<Seat> availableSeats = seatRepository.findByFlightIdAndIsAvailable(ticket.getFlight().getId(), true);
+        if (availableSeats.isEmpty()) {
+            throw new RuntimeException("No available seats for the flight");
+        }
+
+        // İlk uygun koltuğu al ve ilişkilendirmek için
+        Seat selectedSeat = availableSeats.get(0);
+        selectedSeat.setAvailable(false); 
+        seatRepository.save(selectedSeat);
+
+        ticket.setSeatNumber(selectedSeat.getSeatNumber()); // Koltuk numarasını bilete atama işlemi
+
+        return ticketRepository.save(ticket);
     }
 
     @Override
     public Ticket updateTicket(Long id, Ticket ticketDetails) {
         Ticket existingTicket = getTicketById(id);
         existingTicket.setSeatNumber(ticketDetails.getSeatNumber());
-        existingTicket.setAmount(ticketDetails.getAmount());
-        existingTicket.setPnrCode(ticketDetails.getPnrCode());
-        existingTicket.setCurrencyType(ticketDetails.getCurrencyType());
-        existingTicket.setTicketStatus(ticketDetails.getTicketStatus());
         existingTicket.setPassenger(ticketDetails.getPassenger());
         existingTicket.setFlight(ticketDetails.getFlight());
-        return ticketRepos.save(existingTicket);
+        return ticketRepository.save(existingTicket);
     }
 
     @Override
     public void deleteTicket(Long id) {
         Ticket ticket = getTicketById(id);
-        ticketRepos.delete(ticket);
-    }
-
-    @Override
-    public List<Ticket> getTicketsByFlightId(Long flightId) {
-        return ticketRepos.findByFlightId(flightId);
+        ticketRepository.delete(ticket);
     }
 }
